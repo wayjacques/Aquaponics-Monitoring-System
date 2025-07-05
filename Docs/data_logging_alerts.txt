@@ -1,0 +1,21 @@
+# Logging, Alerts & Feedback
+
+## Blynk Feedback Pins
+- V1: Temperature
+- V2: Humidity
+- V4: Water Temperature
+- V5: Soil Moisture
+- V6: Water Level
+- V3: Button to control water pump
+
+## Alerts (Console)
+- Temperature > 30°C → Alert
+- Soil Moisture < 10000 → Alert
+
+## Logging
+- Stored to: logs/sensor_log.csv
+- Format: timestamp, temp, humidity, water temp, soil value, water level
+
+## Flask Web Interface
+- Live dashboard on port 5000
+- Auto-refreshes every 5 seconds

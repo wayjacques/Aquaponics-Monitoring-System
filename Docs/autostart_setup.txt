@@ -1,0 +1,17 @@
+# Auto-start Setup for Aquaponics System
+
+To run the system automatically when your Raspberry Pi boots:
+
+1. Make the script executable:
+   chmod +x code/start_aquaponics.sh
+
+2. Add it to your crontab:
+   crontab -e
+
+3. At the bottom, add:
+   @reboot /full/path/to/code/start_aquaponics.sh
+
+4. Save and reboot to test:
+   sudo reboot
+
+This will start the Flask server and monitoring system automatically in the background.
