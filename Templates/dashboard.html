@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aquaponics Dashboard</title>
+    <script>
+        async function loadData() {
+            const res = await fetch('/data');
+            const data = await res.json();
+            if (!data.error) {
+                document.getElementById("temp").innerText = data.temperature + " °C";
+                document.getElementById("humid").innerText = data.humidity + " %";
+                document.getElementById("wtemp").innerText = data.watertemp + " °C";
+                document.getElementById("soil").innerText = data.soil;
+                document.getElementById("water").innerText = data.water;
+                document.getElementById("time").innerText = data.time;
+            }
+        }
+        setInterval(loadData, 5000);
+    </script>
+</head>
+<body onload="loadData()">
+    <h1>Aquaponics Monitoring Dashboard</h1>
+    <p><strong>Last Updated:</strong> <span id="time">--</span></p>
+    <ul>
+        <li><strong>Air Temp:</strong> <span id="temp">--</span></li>
+        <li><strong>Humidity:</strong> <span id="humid">--</span></li>
+        <li><strong>Water Temp:</strong> <span id="wtemp">--</span></li>
+        <li><strong>Soil Moisture:</strong> <span id="soil">--</span></li>
+        <li><strong>Water Level:</strong> <span id="water">--</span></li>
+    </ul>
+</body>
+</html>
