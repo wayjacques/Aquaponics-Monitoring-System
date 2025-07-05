@@ -1,0 +1,2 @@
+pip3 install flask blynk-library paho-mqtt adafruit-circuitpython-dht \
+             adafruit-circuitpython-ads1x15 w1thermsensor psutil
