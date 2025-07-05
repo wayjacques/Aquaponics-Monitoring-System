@@ -4,11 +4,12 @@ import busio
 import adafruit_dht
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
-from w1thermsensor import W1ThermSensor
+from w1thermsensor import W1ThermSensor, NoSensorFoundError
 import RPi.GPIO as GPIO
 import BlynkLib
 import paho.mqtt.publish as publish
 import csv
+import traceback
 
 # Constants
 BLYNK_AUTH = 'ShDnZnpoc4FARdr3VAyZXcq3DBSJP2kO'
@@ -21,13 +22,37 @@ PUMP_PIN = 17
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PUMP_PIN, GPIO.OUT)
 
-# Sensor Setup
-dht = adafruit_dht.DHT11(board.D4)
-ds18b20 = W1ThermSensor()
-i2c = busio.I2C(board.SCL, board.SDA)
-ads = ADS.ADS1115(i2c)
-soil = AnalogIn(ads, ADS.P0)
-water = AnalogIn(ads, ADS.P1)
+# Sensor Setup - DHT11
+try:
+    dht = adafruit_dht.DHT11(board.D4)
+    dht_available = True
+except Exception as e:
+    print("DHT11 failed to initialize:", e)
+    dht = None
+    dht_available = False
+
+# Sensor Setup - DS18B20
+try:
+    ds18b20 = W1ThermSensor()
+    ds18b20_available = True
+except NoSensorFoundError:
+    print("DS18B20 sensor not found — continuing without water temperature.")
+    ds18b20 = None
+    ds18b20_available = False
+
+# Sensor Setup - ADS1115
+ads_available = False
+soil = None
+water = None
+try:
+    i2c = busio.I2C(board.SCL, board.SDA)
+    ads = ADS.ADS1115(i2c)
+    soil = AnalogIn(ads, ADS.P0)
+    water = AnalogIn(ads, ADS.P1)
+    ads_available = True
+except ValueError as e:
+    print("⚠️ ADS1115 not detected — analog sensors disabled.")
+    traceback.print_exc()
 
 # Blynk Setup
 blynk = BlynkLib.Blynk(BLYNK_AUTH)
@@ -53,7 +78,7 @@ def log_data(temp, humid, wtemp, soil_val, water_val):
         writer = csv.writer(file)
         writer.writerow([time.ctime(), temp, humid, wtemp, soil_val, water_val])
 
-# Load override setting
+# Override file read/write
 OVERRIDE_FILE = "code/override_mode.txt"
 def get_override_mode():
     try:
@@ -67,30 +92,46 @@ def set_override_mode(value):
     with open(OVERRIDE_FILE, "w") as file:
         file.write("1" if int(value[0]) == 1 else "0")
     print(f"Override mode set to: {'ON' if int(value[0]) == 1 else 'OFF'}")
+
 # Main loop
 while True:
     try:
         blynk.run()
-        temp = dht.temperature
-        humid = dht.humidity
-        wtemp = ds18b20.get_temperature()
-        soil_val = soil.value
-        water_val = water.value
 
-        # Send data to Blynk
-        blynk.virtual_write(1, temp)
-        blynk.virtual_write(2, humid)
-        blynk.virtual_write(4, wtemp)
-        blynk.virtual_write(5, soil_val)
-        blynk.virtual_write(6, water_val)
+        temp = None
+        humid = None
+        wtemp = None
+        soil_val = None
+        water_val = None
+
+        if ds18b20_available:
+            wtemp = ds18b20.get_temperature()
+
+        if dht_available:
+            try:
+                humid = dht.humidity
+                temp = dht.temperature
+            except RuntimeError:
+                print("⚠️ DHT11 read error — skipping this cycle")
+
+        if ads_available:
+            soil_val = soil.value
+            water_val = water.value
+
+        # Send to Blynk
+        blynk.virtual_write(1, temp if temp else 0)
+        blynk.virtual_write(2, humid if humid else 0)
+        blynk.virtual_write(4, wtemp if wtemp else 0)
+        blynk.virtual_write(5, soil_val if soil_val else 0)
+        blynk.virtual_write(6, water_val if water_val else 0)
 
         # Log to CSV
         log_data(temp, humid, wtemp, soil_val, water_val)
 
         # Alerts
-        if temp > TEMP_HIGH:
-            print("ALERT: High temperature!")
-        if soil_val < SOIL_THRESHOLD:
+        if temp and temp > TEMP_HIGH:
+            print("ALERT: High air temperature!")
+        if soil_val and soil_val < SOIL_THRESHOLD:
             print("ALERT: Soil is dry!")
 
         time.sleep(5)
@@ -98,3 +139,4 @@ while True:
     except Exception as e:
         print("Sensor read error:", e)
         time.sleep(2)
+
