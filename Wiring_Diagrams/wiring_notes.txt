@@ -1,1 +1,24 @@
+# Wiring (GPIO - Raspberry Pi 3 B+)
 
+DHT11
+- VCC → 3.3V
+- GND → GND
+- Data → GPIO4
+
+DS18B20
+- VCC → 3.3V
+- GND → GND
+- Data → GPIO5 (with 4.7kΩ pull-up)
+
+ADS1115
+- VDD → 3.3V
+- GND → GND
+- SDA → GPIO2
+- SCL → GPIO3
+- A0 → Soil Moisture Sensor
+- A1 → Water Level Sensor
+
+Relay (Pump)
+- IN → GPIO17
+- VCC → 5V
+- GND → GND
