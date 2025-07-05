@@ -16,5 +16,5 @@
 - `templates/` – Flask dashboard HTML
 - `wiring_diagrams/` – Wiring reference
 
-## Authors
-David Ikorikwishaka, Mackenzie Herndon, Dylan MacConnachie
+## Code Author
+David Ikorikwishaka
