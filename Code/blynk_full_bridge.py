@@ -11,7 +11,7 @@ import paho.mqtt.publish as publish
 import csv
 
 # Constants
-BLYNK_AUTH = 'your_blynk_auth_token'
+BLYNK_AUTH = 'ShDnZnpoc4FARdr3VAyZXcq3DBSJP2kO'
 MQTT_BROKER = 'localhost'
 PUMP_TOPIC = 'aquaponics/pump'
 CSV_LOG_PATH = 'logs/sensor_log.csv'
