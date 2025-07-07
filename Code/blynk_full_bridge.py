@@ -27,7 +27,7 @@ try:
     dht = adafruit_dht.DHT11(board.D4)
     dht_available = True
 except Exception as e:
-    print("DHT11 failed to initialize:", e)
+    print("⚠️ DHT11 failed to initialize:", e)
     dht = None
     dht_available = False
 
@@ -36,7 +36,7 @@ try:
     ds18b20 = W1ThermSensor()
     ds18b20_available = True
 except NoSensorFoundError:
-    print("DS18B20 sensor not found — continuing without water temperature.")
+    print("⚠️ DS18B20 sensor not found — continuing without water temperature.")
     ds18b20 = None
     ds18b20_available = False
 
@@ -50,12 +50,25 @@ try:
     soil = AnalogIn(ads, ADS.P0)
     water = AnalogIn(ads, ADS.P1)
     ads_available = True
-except ValueError as e:
+    print("✅ ADS1115 detected")
+except Exception as e:
     print("⚠️ ADS1115 not detected — analog sensors disabled.")
     traceback.print_exc()
 
 # Blynk Setup
-blynk = BlynkLib.Blynk(BLYNK_AUTH)
+class DummyBlynk:
+    def run(self): pass
+    def virtual_write(self, pin, value): pass
+    def VIRTUAL_WRITE(self, pin): return lambda x: None
+
+try:
+    blynk = BlynkLib.Blynk(BLYNK_AUTH, server="blynk.cloud", port=443)
+    blynk_connected = True
+except Exception as e:
+    print("❌ Blynk connection failed. Running in offline mode.")
+    print(e)
+    blynk = DummyBlynk()
+    blynk_connected = False
 
 # Thresholds for alerts
 SOIL_THRESHOLD = 10000
@@ -105,38 +118,40 @@ while True:
         water_val = None
 
         if ds18b20_available:
-            wtemp = ds18b20.get_temperature()
+            try:
+                wtemp = ds18b20.get_temperature()
+            except Exception as e:
+                print("DS18B20 read error:", e)
 
         if dht_available:
             try:
                 humid = dht.humidity
                 temp = dht.temperature
-            except RuntimeError:
-                print("⚠️ DHT11 read error — skipping this cycle")
+            except Exception as e:
+                print("DHT11 read error:", e)
 
         if ads_available:
-            soil_val = soil.value
-            water_val = water.value
+            try:
+                soil_val = soil.value
+                water_val = water.value
+            except Exception as e:
+                print("ADS read error:", e)
 
-        # Send to Blynk
-        blynk.virtual_write(1, temp if temp else 0)
-        blynk.virtual_write(2, humid if humid else 0)
-        blynk.virtual_write(4, wtemp if wtemp else 0)
-        blynk.virtual_write(5, soil_val if soil_val else 0)
-        blynk.virtual_write(6, water_val if water_val else 0)
+        blynk.virtual_write(1, temp if temp is not None else 0)
+        blynk.virtual_write(2, humid if humid is not None else 0)
+        blynk.virtual_write(4, wtemp if wtemp is not None else 0)
+        blynk.virtual_write(5, soil_val if soil_val is not None else 0)
+        blynk.virtual_write(6, water_val if water_val is not None else 0)
 
-        # Log to CSV
         log_data(temp, humid, wtemp, soil_val, water_val)
 
-        # Alerts
-        if temp and temp > TEMP_HIGH:
-            print("ALERT: High air temperature!")
-        if soil_val and soil_val < SOIL_THRESHOLD:
-            print("ALERT: Soil is dry!")
+        if temp is not None and temp > TEMP_HIGH:
+            print("🔥 ALERT: High air temperature!")
+        if soil_val is not None and soil_val < SOIL_THRESHOLD:
+            print("💧 ALERT: Soil is dry!")
 
         time.sleep(5)
 
     except Exception as e:
-        print("Sensor read error:", e)
+        print("Unexpected error:", e)
         time.sleep(2)
-
