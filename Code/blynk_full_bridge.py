@@ -1,3 +1,8 @@
+# Blynk Template Information
+BLYNK_TEMPLATE_ID = "TMPL2RihcLWnk"
+BLYNK_TEMPLATE_NAME = "MQTT Demo"
+BLYNK_AUTH = "c6-CIWqVglNp4IgU5zVjkmnTe0BLympv"
+
 
 import time
 import board
@@ -12,7 +17,6 @@ import paho.mqtt.publish as publish
 import csv
 
 # Constants
-BLYNK_AUTH = 'ShDnZnpoc4FARdr3VAyZXcq3DBSJP2kO'
 MQTT_BROKER = 'localhost'
 PUMP_TOPIC = 'aquaponics/pump'
 CSV_LOG_PATH = 'logs/sensor_log.csv'
