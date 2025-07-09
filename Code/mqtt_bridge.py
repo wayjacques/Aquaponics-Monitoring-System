@@ -58,7 +58,7 @@ def on_message(client, userdata, msg):
         elif msg.payload.decode() == "OFF":
             GPIO.output(PUMP_PIN, GPIO.LOW)
 
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(callback_api_version=5)
 mqtt_client.on_message = on_message
 mqtt_client.connect(MQTT_BROKER)
 mqtt_client.subscribe(PUMP_TOPIC)
@@ -68,34 +68,3 @@ mqtt_client.loop_start()
 def log_data(temp, humid, wtemp, soil_val, water_val):
     with open(CSV_LOG_PATH, mode='a') as file:
         writer = csv.writer(file)
-        writer.writerow([time.ctime(), temp, humid, wtemp, soil_val, water_val])
-
-# Main loop
-while True:
-    try:
-        temp = ds18b20.get_temperature() if ds18b20_available else None
-        humid = dht.humidity if dht_available else None
-        wtemp = temp
-        soil_val = soil.value if analog_available else None
-        water_val = water.value if analog_available else None
-
-        # Publish data
-        if temp is not None:
-            mqtt_client.publish("aquaponics/temp", temp)
-        if humid is not None:
-            mqtt_client.publish("aquaponics/humidity", humid)
-        if wtemp is not None:
-            mqtt_client.publish("aquaponics/water_temp", wtemp)
-        if soil_val is not None:
-            mqtt_client.publish("aquaponics/soil", soil_val)
-        if water_val is not None:
-            mqtt_client.publish("aquaponics/water", water_val)
-
-        # Log locally
-        log_data(temp, humid, wtemp, soil_val, water_val)
-
-        time.sleep(PUBLISH_INTERVAL)
-
-    except Exception as e:
-        print("Sensor read or publish error:", e)
-        time.sleep(2)
