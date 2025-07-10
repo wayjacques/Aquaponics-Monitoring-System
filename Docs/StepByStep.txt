@@ -1,1 +1,125 @@
+Aquaponics-Monitoring-System/
+├── Code/
+│   ├── app.py               # Flask web dashboard server
+│   ├── mqtt_bridge.py       # Original MQTT logic (deprecated)
+│   ├── mqtt_bridge_patched.py # Patched version with error handling
+│   ├── system_health.py     # Optional system monitoring
+│   └── start_aquaponics.sh  # Launch script
+├── templates/
+│   ├── dashboard.html       # Web dashboard UI
+│   └── login.html           # Login page
+├── logs/                    # CSV log storage
+├── autostart_setup.txt      # Crontab setup instructions
+├── wiring_notes.txt         # GPIO wiring for sensors
+├── README.md                # Project description
+
+Hardware Setup
+Double-check all power and ground connections.
+
+Refer to wiring_notes.txt:
+
+DHT11 → GPIO4
+
+DS18B20 → GPIO5 with pull-up
+
+ADS1115 → GPIO2 (SDA), GPIO3 (SCL)
+
+Pump Relay → GPIO17
+
+
+
+ Software Setup (One-time)
+On the Raspberry Pi terminal:
+
+1. Enable I2C and 1-Wire
+bash
+sudo raspi-config
+# Interfaces → Enable I2C and 1-Wire
+sudo reboot
+
+2. Create and Activate a Virtual Environment
+bash
+cd ~/Aquaponics-Monitoring-System/Code
+python3 -m venv venv
+source venv/bin/activate
+
+3. Install Dependencies
+bash
+pip install flask paho-mqtt adafruit-blinka adafruit-circuitpython-dht adafruit-circuitpython-ads1x15 w1thermsensor RPi.GPIO
+
+
+Running the Project
+Option A: Manual Start
+Run this in the terminal:
+bash
+source ~/Aquaponics-Monitoring-System/Code/venv/bin/activate
+python3 app.py &
+python3 mqtt_bridge_patched.py &
+app.py launches the web dashboard
+mqtt_bridge_patched.py reads sensors, logs to CSV, and publishes via MQTT
+
+Now open the browser and visit:
+📍 http://raspberrypi.local:5000 (or replace with Pi's IP)
+
+
+
+
+Option B: Auto-Start on Boot
+Make the script executable:
+bash
+chmod +x ~/Aquaponics-Monitoring-System/Code/start_aquaponics.sh
+
+Add to crontab:
+bash
+crontab -e
+
+At the bottom, add:
+swift
+@reboot /home/senior/Aquaponics-Monitoring-System/Code/start_aquaponics.sh
+
+Then:
+bash
+sudo reboot
+
+
+Web Dashboard Login
+Visit /login to access the dashboard.
+Current logic accepts static usernames (defined in app.py). You can add your own users/passwords there.
+
+MQTT
+The mqtt_bridge_patched.py script publishes sensor readings to a local broker (localhost). You must install Mosquitto:
+
+bash
+sudo apt install mosquitto mosquitto-clients
+sudo systemctl enable mosquitto
+
+Logs
+Logs are saved in:
+logs/sensor_log.csv
+
+You can open this file to review historic sensor readings with timestamps.
+
+
+Testing Sensors
+Use this script to test individual sensors:
+
+bash
+python3 -i
+>>> import board, busio, adafruit_dht
+>>> dht = adafruit_dht.DHT11(board.D4)
+>>> dht.temperature
+>>> dht.humidity
+
+
+
+Troubleshooting
+Sensor not found? Script will still run and skip that sensor.
+
+Web dashboard not loading? Make sure app.py is running.
+
+MQTT not working? Test with:
+
+bash
+mosquitto_sub -t 'aquaponics/#' -v
+
 
