@@ -3,6 +3,10 @@ import threading
 import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
 from w1thermsensor import W1ThermSensor, NoSensorFoundError
+import csv
+import time
+
+CSV_LOG_PATH = 'logs/sensor_log.csv'
 
 # GPIO Setup
 PUMP_PIN = 17
@@ -67,6 +71,20 @@ apply_pump_state()
 try:
     print("🚰 Pump is ON by default. Use MQTT to control it.")
     while True:
+        try:
+    temp_c = ds18b20.get_temperature()
+    print(f"Water Temp: {temp_c:.2f}°C")
+
+    # Log to CSV
+    with open(CSV_LOG_PATH, 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([time.ctime(), "", "", temp_c, "", ""])  # Only time & water temp
+
+    #  Publish via MQTT
+    mqtt_client.publish("aquaponics/watertemp", temp_c)
+
+except Exception as e:
+    print("Sensor read error:", e)
         if sensor_found:
             temp = sensor.get_temperature()
             print(f"🌡️  Temperature: {temp:.2f} °C")
