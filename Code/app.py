@@ -4,16 +4,11 @@ import csv
 app = Flask(__name__)
 app.secret_key = "secure-aquaponics"
 
-USERNAME = "admin"
-PASSWORD = "pass123"
-
-CSV_FILE = 'logs/sensor_log.csv'
-
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form['username'] == USERNAME and request.form['password'] == PASSWORD:
-            session['user'] = USERNAME
+        if request.form['username'] == 'admin' and request.form['password'] == 'pass123':
+            session['user'] = 'admin'
             return redirect(url_for('dashboard'))
     return render_template('login.html')
 
@@ -26,20 +21,14 @@ def dashboard():
 @app.route('/data')
 def data():
     try:
-        with open(CSV_FILE, 'r') as f:
-            rows = list(csv.reader(f))[-1]
+        with open('logs/sensor_log.csv', 'r') as f:
+            last_row = list(csv.reader(f))[-1]
             return jsonify({
-                'time': rows[0],
-                'temperature': rows[1],
-                'humidity': rows[2],
-                'watertemp': rows[3],
-                'soil': rows[4],
-                'water': rows[5]
+                'time': last_row[0],
+                'watertemp': last_row[3]
             })
     except:
-        return jsonify({
-            'error': 'No data available'
-        })
+        return jsonify({'error': 'No water temp data found'})
 
 @app.route('/logout')
 def logout():
